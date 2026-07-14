@@ -12,7 +12,7 @@ PHDRS
     limine_requests PT_LOAD;
     text PT_LOAD; /*actual  code (read/exe)*/
     rodata PT_LOAD; /*read only*/
-    data PT_LOAD; /*variables (read and write)*/
+    data PT_LOAD; /*variables (read and write) (TO DO: read about buffer overflow)*/
 }
 
 SECTIONS
@@ -30,11 +30,11 @@ SECTIONS
         KEEP(*(.limine_requests_end))
     } :limine_requests
 
-    /* Move to the next memory page for .text */
+    /* Move to the next memory page for .text (procesor nie moze przydzeilic ronznych praw do tej samej strony)*/
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     .text : {
-        *(.text .text.*)
+        *(.text .text.*) /*ten drugi to gdy sa podskecje typu .text.hcf dla funkcji hfc np*/
     } :text
 
     /* Move to the next memory page for .rodata */
@@ -59,8 +59,7 @@ SECTIONS
 
     /* NOTE: .bss needs to be the last thing mapped to :data, otherwise lots of */
     /* unnecessary zeros will be written to the binary. */
-    /* If you need, for example, .init_array and .fini_array, those should be placed */
-    /* above this. */
+    /* If you need, for example, .init_array and .fini_array, those should be placed above this. */
     .bss : {
         *(.bss .bss.*)
         *(COMMON)
