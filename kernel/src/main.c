@@ -46,7 +46,7 @@ void *memset(void* s, int c, size_t n)
 }
 
 //when dest and src overlap
-voif memmove (void *dest, const void* src, size_t n)
+void memmove (void *dest, const void* src, size_t n)
 {
   uint8_t *pdest = dest;
   const uint8_t *psrc = src;
@@ -106,6 +106,8 @@ void kmain(void)
   {
     hcf();
   }
+  
+  struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
   //gradient
   volatile uint32_t *fb_ptr = framebuffer->address;

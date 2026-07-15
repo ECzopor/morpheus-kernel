@@ -45,6 +45,13 @@ NASMFLAGS := -g
 # User controllable linker flags. We set none by default.
 LDFLAGS :=
 
+# Ensure the dependencies have been obtained.
+ifneq ($(filter-out clean distclean,$(or $(MAKECMDGOALS),default)),)
+    ifeq ($(wildcard .deps-obtained),)
+        $(error Please run the ./get-deps script first)
+    endif
+endif
+
 # Check if CC is Clang.
 override CC_IS_CLANG := $(shell ! $(CC) --version 2>/dev/null | grep -q '^Target: '; echo $$?)
 
@@ -79,6 +86,7 @@ override CFLAGS += \
 # Internal C preprocessor flags that should not be changed by the user.
 override CPPFLAGS := \
     -I src \
+		-I limine-protocol/include \
     $(CPPFLAGS) \
     -MMD \
     -MP
@@ -138,3 +146,8 @@ obj/%.asm.o: %.asm GNUmakefile
 .PHONY: clean
 clean:
 	rm -rf bin obj
+
+# Remove everything built and generated including downloaded dependencies.
+.PHONY: distclean
+distclean: clean
+	rm -rf .deps-obtained .cache compile_commands.json freestanding-c-hdrs cc-runtime limine-protocol
