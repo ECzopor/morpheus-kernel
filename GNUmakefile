@@ -1,137 +1,76 @@
-# Nuke built-in rules.
+#konfiguracja uzywana do stworzenia obrazku naszego jadra (moze korzytsac z biblioteki standarowej z mojego kompa do stworzenia obrazu)
+
 .SUFFIXES:
 
-# This is the name that our final executable will have.
-# Change as needed.
-override OUTPUT := morpheus-kernel
+# Default user QEMU flags. These are appended to the QEMU command calls.
+QEMUFLAGS := -m 2G #przypisze dokaldnie 2G pamieci RAM 
 
-# User controllable toolchain and toolchain prefix.
-TOOLCHAIN :=
-TOOLCHAIN_PREFIX :=
-ifneq ($(TOOLCHAIN),)
-    ifeq ($(TOOLCHAIN_PREFIX),)
-        TOOLCHAIN_PREFIX := $(TOOLCHAIN)-
-    endif
-endif
+override IMAGE_NAME := morpheus
 
-# User controllable C compiler command.
-ifneq ($(TOOLCHAIN_PREFIX),)
-    CC := $(TOOLCHAIN_PREFIX)gcc
-else
-    CC := cc
-endif
+HOST_CC := cc
+HOST_CFLAGS := -g -O2 -pipe
+HOST_CPPFLAGS :=
+HOST_LDFLAGS :=
+HOST_LIBS :=
 
-# User controllable linker command.
-LD := $(TOOLCHAIN_PREFIX)ld
-
-# Defaults overrides for variables if using "llvm" as toolchain.
-ifeq ($(TOOLCHAIN),llvm)
-    CC := clang
-    LD := ld.lld
-endif
-
-# User controllable C flags.
-CFLAGS := -g -O2 -pipe
-
-# User controllable C preprocessor flags. We set none by default.
-CPPFLAGS :=
-
-# User controllable nasm flags.
-NASMFLAGS := -g
-
-# User controllable linker flags. We set none by default.
-LDFLAGS :=
-
-# Check if CC is Clang.
-override CC_IS_CLANG := $(shell ! $(CC) --version 2>/dev/null | grep -q '^Target: '; echo $$?)
-
-# If the C compiler is Clang, set the target as needed.
-ifeq ($(CC_IS_CLANG),1)
-    override CC += \
-        -target x86_64-unknown-none-elf
-endif
-
-# Internal C flags that should not be changed by the user.
-override CFLAGS += \
-    -Wall \
-    -Wextra \
-    -std=gnu11 \
-    -ffreestanding \
-    -fno-stack-protector \
-    -fno-stack-check \
-    -fno-lto \
-    -fno-PIC \
-    -ffunction-sections \
-    -fdata-sections \
-    -m64 \
-    -march=x86-64 \
-    -mabi=sysv \
-    -mno-80387 \
-    -mno-mmx \
-    -mno-sse \
-    -mno-sse2 \
-    -mno-red-zone \
-    -mcmodel=kernel
-
-# Internal C preprocessor flags that should not be changed by the user.
-override CPPFLAGS := \
-    -I src \
-    $(CPPFLAGS) \
-    -MMD \
-    -MP
-
-# Internal nasm flags that should not be changed by the user.
-override NASMFLAGS := \
-    -f elf64 \
-    $(patsubst -g,-g -F dwarf,$(NASMFLAGS)) \
-    -Wall
-
-# Internal linker flags that should not be changed by the user.
-override LDFLAGS += \
-    -m elf_x86_64 \
-    -nostdlib \
-    -static \
-    -z max-page-size=0x1000 \
-    --gc-sections \
-    -T linker-scripts/linker.lds
-
-# Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
-# object and header dependency file names.
-override SRCFILES := $(shell find -L src -type f 2>/dev/null | LC_ALL=C sort)
-override CFILES := $(filter %.c,$(SRCFILES))
-override ASFILES := $(filter %.S,$(SRCFILES))
-override NASMFILES := $(filter %.asm,$(SRCFILES))
-override OBJ := $(addprefix obj/,$(CFILES:.c=.c.o) $(ASFILES:.S=.S.o) $(NASMFILES:.asm=.asm.o))
-override HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
-
-# Default target. This must come first, before header dependencies. (bo domyslnie generuje caly projekt)
 .PHONY: all
-all: bin/$(OUTPUT)
+all: $(IMAGE_NAME).iso
 
-# Include header dependencies. (minus oznacza try a jka sie nie uda to move on)
--include $(HEADER_DEPS)
+.PHONY: kernel
+kernel:
+	$(MAKE) -C kernel
 
-# Link rules for the final executable.
-bin/$(OUTPUT): GNUmakefile linker-scripts/linker.lds $(OBJ)
-	mkdir -p "$(dir $@)"
-	$(LD) $(LDFLAGS) $(OBJ) -o $@
+.PHONY: run
+run: $(IMAGE_NAME).iso
+	qemu-system-x86_64 \
+		-M q35 \
+		-cdrom $(IMAGE_NAME).iso \
+		-boot d \
+		$(QEMUFLAGS)
 
-# Compilation rules for *.c files.
-obj/%.c.o: %.c GNUmakefile
-	mkdir -p "$(dir $@)"
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+.PHONY: run-uefi
+run-uefi: edk2-ovmf-bins $(IMAGE_NAME).iso
+	qemu-system-x86_64 \
+		-M q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf-bins/ovmf-code-x86_64.fd,readonly=on \
+		-cdrom $(IMAGE_NAME).iso \
+		-boot d \
+		$(QEMUFLAGS)
 
-# Compilation rules for *.S files.
-obj/%.S.o: %.S GNUmakefile
-	mkdir -p "$(dir $@)"
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+#OVMF - Open Virtual Machine Firmware, czyli kod UEFI dla maszyn wirtualnych (Np. QEMU); musimy zmienic defaultowe BIOS QEMU
+edk2-ovmf-bins:
+	curl -L https://github.com/osdev0/edk2-ovmf-stable-bins/releases/latest/download/edk2-ovmf-bins.tar.gz | gunzip | tar -xf -
 
-# Compilation rules for *.asm (nasm) files.
-obj/%.asm.o: %.asm GNUmakefile
-	mkdir -p "$(dir $@)"
-	nasm $(NASMFLAGS) $< -o $@
+#nasz bootloader
+limine-binary/limine:
+	rm -rf limine-binary
+	curl -L https://github.com/Limine-Bootloader/Limine/releases/latest/download/limine-binary.tar.gz | gunzip | tar -xf -
+	$(MAKE) -C limine-binary \
+		CC="$(HOST_CC)" \
+		CFLAGS="$(HOST_CFLAGS)" \
+		CPPFLAGS="$(HOST_CPPFLAGS)" \
+		LDFLAGS="$(HOST_LDFLAGS)" \
+		LIBS="$(HOST_LIBS)"
 
-# Remove object files and the final executable.
+
+$(IMAGE_NAME).iso: limine-binary/limine kernel
+	rm -rf iso_root
+	mkdir -p iso_root/boot
+	cp -v kernel/bin/kernel iso_root/boot/
+	mkdir -p iso_root/boot/limine
+	cp -v limine.conf limine-binary/limine-bios.sys limine-binary/limine-bios-cd.bin limine-binary/limine-uefi-cd.bin iso_root/boot/limine/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine-binary/BOOTX64.EFI iso_root/EFI/BOOT/
+	cp -v limine-binary/BOOTIA32.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
+		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
+		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o $(IMAGE_NAME).iso
+	./limine-binary/limine bios-install $(IMAGE_NAME).iso
+	rm -rf iso_root
+
 .PHONY: clean
 clean:
-	rm -rf bin obj
+	$(MAKE) -C kernel clean
+	rm -rf iso_root $(IMAGE_NAME).iso $(IMAGE_NAME).hdd

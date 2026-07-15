@@ -1,0 +1,2 @@
+maybe add deps like on github?
+maybe add clean and install like on github?
