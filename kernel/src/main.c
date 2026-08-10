@@ -2,12 +2,13 @@
 #include <stddef.h>//for size_t, NULLs and so on
 #include <stdbool.h>//bool
 #include <limine.h>
+#include "idt.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
 
 __attribute__((used, section(".limine_requests")))
-static volatile struct limine_framebuffer_request framebuffer_request = {
+volatile struct limine_framebuffer_request framebuffer_request = {
   .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
   .revision = 0
 };
@@ -93,6 +94,7 @@ static void hcf(void)
   }
 }
 
+
 void kmain(void)
 {
   //we have a base revision?
@@ -100,6 +102,16 @@ void kmain(void)
   {
     hcf();
   }
+
+  idt_init();
+  
+  int a = 42;
+  int b = 0;
+  __asm__ volatile (
+        "idiv %0"
+        : 
+        : "r"(b), "a"(a), "d"(0)
+    );
 
   //we have a framebuffer? (karta graficzna - ekran)
   if(framebuffer_request.response == NULL || framebuffer_request.response->framebuffer_count < 1)
