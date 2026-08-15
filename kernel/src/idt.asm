@@ -1,19 +1,62 @@
 ;so the code knows this bit is from somewhere else
 extern exception_handler
 
+;another two macros for avinf gp registers
+%macro pushagrd 0
+push rax
+push rbx
+push rcx
+push rdx
+push rbp
+push rsi
+push rdi
+push r8
+push r9
+push r10
+push r11
+push r12
+push r13
+push r14
+push r15
+%endmacro
+
+%macro popagrd 0
+pop r15
+pop r14
+pop r13
+pop r12
+pop r11
+pop r10
+pop r9
+pop r8
+pop rdi
+pop rsi
+pop rbp
+pop rdx
+pop rcx
+pop rbx
+pop rax
+%endmacro
+
 ;two macros, so I don't have to reapet myslef while creating IRS stubs
 ;why do we need to err and no err again? -> because some errors push error code to stack (BUT NOT ALL!), so we want to get it
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
+    pushagrd
     call exception_handler
+    popagrd
+    add rsp, 8
     iretq ;Short for Interrupt Return, this automaticlly restores the current state of registers etc (error code, RIP, CS, RFLAGS, RSP, and SS)
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
     push qword 0 ;so each macro will the error code on the call stack
+    pushagrd
     call exception_handler
+    popagrd
+    add rsp, 8
     iretq
 %endmacro
 
@@ -59,3 +102,5 @@ isr_stub_table:
     dq isr_stub_%+i ;assign the val in the isr to the table (64 bits)
 %assign i i+1 ;i++
 %endrep
+
+section .note.GNU-stack noexec

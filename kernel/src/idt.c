@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define GDT_OFFSET_KERNEL_CODE 0x08
 #define IDT_MAX_DESCRIPTORS 256
 
 extern volatile struct limine_framebuffer_request framebuffer_request;
@@ -11,7 +10,7 @@ extern volatile struct limine_framebuffer_request framebuffer_request;
 __attribute__((noreturn))
 void exception_handler(void); 
 void exception_handler() {
-  /*
+  
     if(framebuffer_request.response == NULL || framebuffer_request.response->framebuffer_count < 1)
   {
     for(;;)
@@ -31,7 +30,7 @@ void exception_handler() {
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 16) | nX;
       }
   }
-  */
+  
 
     __asm__ volatile ("cli");
     for (;;) {
@@ -45,9 +44,12 @@ static idt_entry_t idt[256]; // Create an array of IDT entries; aligned for perf
 static idtr_t idtr;
 
 void idt_set_descriptor(uint8_t vector, void* isr, uint8_t flags) {
+    uint16_t current_cs; 
+    __asm__ volatile ("mov %%cs, %0" : "=r"(current_cs));
+
     idt_entry_t* descriptor = &idt[vector]; 
     descriptor->isr_low        = (uint64_t)isr & 0xFFFF; 
-    descriptor->kernel_cs      = GDT_OFFSET_KERNEL_CODE; 
+    descriptor->kernel_cs      = current_cs; 
     descriptor->ist            = 0; 
     descriptor->attributes     = flags;
     descriptor->isr_mid        = ((uint64_t)isr >> 16) & 0xFFFF; 

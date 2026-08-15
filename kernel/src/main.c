@@ -107,11 +107,14 @@ void kmain(void)
   
   int a = 42;
   int b = 0;
+
   __asm__ volatile (
-        "idiv %0"
-        : 
-        : "r"(b), "a"(a), "d"(0)
-    );
+     "xor %%edx, %%edx\n\t"
+      "idiv %1"
+      : "+a"(a)
+      : "r"(b)
+      : "rdx"
+  );
 
   //we have a framebuffer? (karta graficzna - ekran)
   if(framebuffer_request.response == NULL || framebuffer_request.response->framebuffer_count < 1)
