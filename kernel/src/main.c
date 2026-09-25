@@ -3,6 +3,7 @@
 #include <stdbool.h>//bool
 #include <limine.h>
 #include "idt.h"
+#include "apic.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -104,7 +105,9 @@ void kmain(void)
   }
 
   idt_init();
-  
+  apic_init();
+
+  //for testing the IDT:
   int a = 42;
   int b = 0;
 
@@ -116,6 +119,7 @@ void kmain(void)
       : "rdx"
   );
 
+  //for testing the limine_framebuffer:
   //we have a framebuffer? (karta graficzna - ekran)
   if(framebuffer_request.response == NULL || framebuffer_request.response->framebuffer_count < 1)
   {
