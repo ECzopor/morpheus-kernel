@@ -1,5 +1,7 @@
 ;so the code knows this bit is from somewhere else
 extern exception_handler
+extern going_ghost_handler
+extern timer_handler
 
 ;another two macros for avinf gp registers
 %macro pushagrd 0
@@ -60,6 +62,26 @@ isr_stub_%+%1:
     iretq
 %endmacro
 
+%macro isr_ghost_boy 1
+isr_stub_%+%1:
+    push qword 0;
+    pushagrd
+    call going_ghost_handler
+    popagrd
+    add rsp, 8
+    iretq
+%endmacro
+
+%macro isr_timer 1
+isr_stub_%+%1:
+  push qword 0;
+  pushagrd
+  call timer_handler
+  popagrd
+  add rsp, 8
+  iretq
+%endmacro
+
 ;instantiating the 32 CPU exception entry points (vectors 0-31)
 isr_no_err_stub 0
 isr_no_err_stub 1
@@ -93,14 +115,25 @@ isr_no_err_stub 28
 isr_no_err_stub 29
 isr_err_stub    30
 isr_no_err_stub 31
+isr_timer 32
+;and now i wanna add the ghost boy:
+isr_ghost_boy 255
 
 ;this is a table with all the ISRs, so C can access it
 global isr_stub_table
 isr_stub_table:
 %assign i 0 ;i=0
-%rep    32 ;reapeat 32 times
+%rep    33 ;reapeat 32 times for CPU and one for timer
     dq isr_stub_%+i ;assign the val in the isr to the table (64 bits)
 %assign i i+1 ;i++
 %endrep
+;for now i will fill the vector 33-254 with 0
+%assign i 33
+%rep 222
+    dq 0
+%assign i i+1
+%endrep
+;and the spurious vector
+dq isr_stub_255
 
 section .note.GNU-stack noexec

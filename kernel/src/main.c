@@ -4,6 +4,7 @@
 #include <limine.h>
 #include "idt.h"
 #include "apic.h"
+#include "timer.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -12,6 +13,12 @@ __attribute__((used, section(".limine_requests")))
 volatile struct limine_framebuffer_request framebuffer_request = {
   .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
   .revision = 0
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile struct limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST_ID,
+    .revision = 0
 };
 
 __attribute__((used, section(".limine_requests_start")))
@@ -91,7 +98,7 @@ static void hcf(void)
 {
   for(;;)
   {
-    asm("hlt"); //inline assembly
+    asm("hlt"); //inline assemblsrc/main.c:154:3: warning: implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
   }
 }
 
@@ -103,10 +110,15 @@ void kmain(void)
   {
     hcf();
   }
-
+  if(hhdm_request.response == NULL)
+  {
+    hcf();
+  }
+  uint64_t hhdm_offset = hhdm_request.response->offset;
+  
   idt_init();
-  apic_init();
-
+  apic_init(hhdm_offset);
+  /*
   //for testing the IDT:
   int a = 42;
   int b = 0;
@@ -118,6 +130,7 @@ void kmain(void)
       : "r"(b)
       : "rdx"
   );
+  */
 
   //for testing the limine_framebuffer:
   //we have a framebuffer? (karta graficzna - ekran)
@@ -137,7 +150,8 @@ void kmain(void)
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
       }
   }
-
+  sleep(10);
   // potem w pamieci smieci wiec nie chcemy ich czytac   
   hcf();
+
 }
