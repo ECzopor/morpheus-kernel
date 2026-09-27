@@ -98,7 +98,7 @@ static void hcf(void)
 {
   for(;;)
   {
-    asm("hlt"); //inline assemblsrc/main.c:154:3: warning: implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
+    __asm__ volatile ("hlt");
   }
 }
 
@@ -118,6 +118,7 @@ void kmain(void)
   
   idt_init();
   apic_init(hhdm_offset);
+  __asm__ volatile ("sti");
   /*
   //for testing the IDT:
   int a = 42;
@@ -150,7 +151,20 @@ void kmain(void)
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
       }
   }
-  sleep(10);
+  sleep(2);
+
+  framebuffer = framebuffer_request.response->framebuffers[0];
+
+  //gradient
+  fb_ptr = framebuffer->address;
+  for (size_t y = 0; y < framebuffer->height; y++) {
+      for (size_t x = 0; x < framebuffer->width; x++) {
+           uint32_t nX = x * 205 / framebuffer->width;
+          uint32_t nY = y * 255 / framebuffer->height;
+          fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
+      }
+  }
+
   // potem w pamieci smieci wiec nie chcemy ich czytac   
   hcf();
 
