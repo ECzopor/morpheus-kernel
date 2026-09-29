@@ -30,7 +30,7 @@ void sleep(uint64_t time)
     {
         __asm__ volatile ("hlt");
     }
-
+    
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     
    //gradient for testing
@@ -42,5 +42,6 @@ void sleep(uint64_t time)
            fb_ptr[y * (framebuffer->pitch / 4) + x] = (nX << 8) | (nY << 16) | (255-nX);
        }
    } 
+  
 
 }

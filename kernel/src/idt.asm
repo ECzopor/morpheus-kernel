@@ -45,9 +45,15 @@ pop rax
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
+    push qword %1
     pushagrd
+
+    mov rdi, [rsp + 120]
+    mov rsi, [rsp + 128]
     call exception_handler
+
     popagrd
+    add rsp, 8
     add rsp, 8
     iretq ;Short for Interrupt Return, this automaticlly restores the current state of registers etc (error code, RIP, CS, RFLAGS, RSP, and SS)
 %endmacro
@@ -55,9 +61,15 @@ isr_stub_%+%1:
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
     push qword 0 ;so each macro will the error code on the call stack
+    push qword %1
     pushagrd
+
+    mov rdi, [rsp + 120]
+    mov rsi, [rsp + 128]
     call exception_handler
+
     popagrd
+    add rsp, 8
     add rsp, 8
     iretq
 %endmacro
@@ -130,7 +142,7 @@ isr_stub_table:
 ;for now i will fill the vector 33-254 with 0
 %assign i 33
 %rep 222
-    dq 0
+    dq isr_stub_255 ;CHANGE IT LATER!
 %assign i i+1
 %endrep
 ;and the spurious vector

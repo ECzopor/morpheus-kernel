@@ -30,7 +30,7 @@ void eoi(void)
     write(EOI, 0x0);
 }
 
-void apic_init(uint64_t hhdm_offset) //static so other porgrams (files)can use it right?
+void apic_init(uint64_t hhdm_offset)
 {   //limine has already done this for my actully, but I still wrote my own, so if I ever wanna change the bootloader this is safe
     mask_pic();
     //there are some other stuff that limine has done for me like: "- The local APIC is enabled (`IA32_APIC_BASE` bit 11) and software-enabled (SVR bit 8). - The Spurious Interrupt Vector Register is set to `0x1FF`.- The Task Priority Register is set to 0." - /morpheus-kernel/kernel/limine-protocol/PROTOCOL.md
@@ -42,6 +42,9 @@ void apic_init(uint64_t hhdm_offset) //static so other porgrams (files)can use i
     write(TPR, 0x0); //task pro to 0
 
     write(TDCR, 0x3); //divide by 16 like on os dev
-    write(LVTT, 32 | (1 << 17)); //LVTT takes care of the timer interrupt (vec32), periodic mode
-    write(TICR, 10000000); //no calibrating, just hardcoding the val
+    uint32_t timer_mode_periodic = (1 << 17);
+    write(LVTT, 32 | timer_mode_periodic);  
+
+  //write(LVTT, 32 | (1 << 17)); //LVTT takes care of the timer interrupt (vec32), periodic mode
+    write(TICR, 1000); //no calibrating, just hardcoding the val
 }

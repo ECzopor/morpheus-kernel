@@ -5,6 +5,10 @@
 #include "idt.h"
 #include "apic.h"
 #include "timer.h"
+#include "debug.h"
+
+__attribute__((used, section(".limine_requests_start")))
+static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -20,9 +24,6 @@ volatile struct limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST_ID,
     .revision = 0
 };
-
-__attribute__((used, section(".limine_requests_start")))
-static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end")))
 static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
@@ -105,6 +106,7 @@ static void hcf(void)
 
 void kmain(void)
 {
+  debug_put("inside kmain");
   //we have a base revision?
   if(LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false)
   {
@@ -115,10 +117,11 @@ void kmain(void)
     hcf();
   }
   uint64_t hhdm_offset = hhdm_request.response->offset;
-  
+  debug_put("limine works");
   idt_init();
   apic_init(hhdm_offset);
   __asm__ volatile ("sti");
+  debug_put("sti works");
   /*
   //for testing the IDT:
   int a = 42;
@@ -141,7 +144,6 @@ void kmain(void)
   }
   
   struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
   //gradient
   volatile uint32_t *fb_ptr = framebuffer->address;
   for (size_t y = 0; y < framebuffer->height; y++) {
@@ -151,7 +153,7 @@ void kmain(void)
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
       }
   }
-  sleep(2);
+  //sleep(10);
 
   framebuffer = framebuffer_request.response->framebuffers[0];
 
@@ -164,7 +166,6 @@ void kmain(void)
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
       }
   }
-
   // potem w pamieci smieci wiec nie chcemy ich czytac   
   hcf();
 
