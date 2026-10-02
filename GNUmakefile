@@ -3,7 +3,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G #przypisze dokaldnie 2G pamieci RAM 
+QEMUFLAGS := -m 2G -enable-kvm -cpu host#przypisze dokaldnie 2G pamieci RAM 
 
 override IMAGE_NAME := morpheus
 
