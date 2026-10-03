@@ -6,13 +6,13 @@
 #define PIC1_DATA (PIC1+1)
 #define PIC2_DATA (PIC2+1)
 #define X2APIC_MSR_BASE 0x800
-// LAPIC Register Offsets
-#define TPR   0x0080  // Task Priority Register
-#define EOI   0x00B0  // End of Interrupt Register
-#define SVR   0x00F0  // Spurious Interrupt Vector Register
-#define LVTT  0x0320  // LVT Timer Register
-#define TDCR  0x0380  // Timer Divide Configuration Register
-#define TICR  0x0390  // Timer Initial Count Register
 
-void apic_init(uint64_t hhdm_offset);
+#define TPR   0x080  // Task Priority Register
+#define EOI   0x0B0  // End of Interrupt Register
+#define SVR   0x0F0   // Spurious Interrupt Vector Register
+#define LVTT  0x320   // LVT Timer Register
+#define TDCR  0x3E0   // Timer Divide Configuration Register
+#define TICR  0x380   // Timer Initial Count Register
+
+void apic_init (void);
 void eoi(void);

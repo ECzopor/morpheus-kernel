@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "limine.h"
 #include <stddef.h>
+#include "debug.h"
 
 extern volatile struct limine_framebuffer_request framebuffer_request;
 
@@ -10,6 +11,7 @@ void timer_handler()
 {
     ticks++;
     eoi();
+    debug_put("TICK! ");
     //LATER Inside the timer interrupt we can do scheduling, check limits and sleep queues?
     //gradients for testing:
     
@@ -25,13 +27,7 @@ void sleep(uint64_t time)
       }
     }
 
-    uint64_t target = ticks+time;
-    while(ticks < target)
-    {
-        __asm__ volatile ("hlt");
-    }
-    
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+        struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     
    //gradient for testing
    volatile uint32_t *fb_ptr = framebuffer->address;
@@ -41,7 +37,12 @@ void sleep(uint64_t time)
            uint32_t nY = y * 255 / framebuffer->height;
            fb_ptr[y * (framebuffer->pitch / 4) + x] = (nX << 8) | (nY << 16) | (255-nX);
        }
-   } 
-  
+   }
+
+  uint64_t target = ticks+time;
+    while(ticks < target)
+    {
+        __asm__ volatile ("hlt");
+    }
 
 }

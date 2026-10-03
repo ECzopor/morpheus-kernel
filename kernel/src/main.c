@@ -20,12 +20,6 @@ volatile struct limine_framebuffer_request framebuffer_request = {
 };
 
 __attribute__((used, section(".limine_requests")))
-volatile struct limine_hhdm_request hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST_ID,
-    .revision = 0
-};
-
-__attribute__((used, section(".limine_requests")))
 volatile struct limine_mp_request mp_request = {
     .id = LIMINE_MP_REQUEST_ID,
     .revision =0,
@@ -120,14 +114,9 @@ void kmain(void)
   {
     hcf();
   }
-  if(hhdm_request.response == NULL)
-  {
-    hcf();
-  }
-  uint64_t hhdm_offset = hhdm_request.response->offset;
   debug_put("limine works");
   idt_init();
-  apic_init(hhdm_offset);
+  apic_init();
   __asm__ volatile ("sti");
   debug_put("sti works");
   /*
@@ -161,7 +150,9 @@ void kmain(void)
           fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
       }
   }
-  //sleep(10);
+  debug_put("sleep start");
+  sleep(10);
+  debug_put("sleep end");
 
   framebuffer = framebuffer_request.response->framebuffers[0];
 
