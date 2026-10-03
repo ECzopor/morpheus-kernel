@@ -1,4 +1,4 @@
-#  morpheus-kernel
+# ✩₊˚.⋆☾⋆⁺₊✧ morpheus-kernel ✩₊˚.⋆☾⋆⁺₊✧
 
 A custom 64-bit hobby kernel built from scratch in **C** and **x86_64 Assembly** to explore systems architecture, hardware management, and kernel design.
 
