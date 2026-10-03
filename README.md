@@ -29,7 +29,7 @@ I also keep a short digital log of my development process on Instagram if you ar
 * **CPU Exception Handlers (Vectors 0–31):** Custom assembly stubs that safely preserve execution state (register pushes) and pass CPU stack frames to C handlers (e.g., `#DE` Divide-by-Zero, `#GP` General Protection Fault, `#PF` Page Fault).
 * **Software Debugging Subsystem:** with the debug_put() function
 
-###  Hardware Control & Advanced Timekeeping
+###  Hardware Control & Timekeeping
 * **Legacy Hardware Masking:** Explicitly disables/masks the legacy 8259 PIC to eliminate spurious hardware noise.
 * **Modern APIC & x2APIC Subsystem:** Implements support for the local Advanced Programmable Interrupt Controller (LAPIC).
 * **MMU Bypass via MSRs:** Leverages **x2APIC** using CPU Model-Specific Registers (`wrmsr`/`rdmsr`) to control hardware timing without requiring premature virtual memory allocation/paging setups. (will later be replaces of course)
